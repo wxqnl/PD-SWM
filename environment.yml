@@ -1,0 +1,10 @@
+name: pd-swm
+channels:
+  - pytorch
+  - nvidia
+  - defaults
+dependencies:
+  - python=3.10
+  - pytorch=2.4.1
+  - pytorch-cuda=12.4
+  - pip

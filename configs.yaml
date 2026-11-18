@@ -1,0 +1,379 @@
+defaults:
+
+  logdir: null
+  traindir: null
+  evaldir: null
+  offline_traindir: ''
+  offline_evaldir: ''
+  seed: 0
+  env_seed_per_env: False  # True: a different seed for each parallel env (dreamer.env_seed)
+  deterministic_run: False
+  steps: 1e6
+  parallel: False
+  eval_every: 1e4
+  eval_episode_num: 10
+  log_every: 1e4
+  reset_every: 0
+  device: 'cuda:0'
+  compile: True
+  precision: 32
+  debug: False
+  expl_gifs: False
+  video_pred_log: True
+
+  # Environment
+  task: 'dmc_walker_walk'
+  size: [64, 64]
+  envs: 1
+  action_repeat: 2
+  time_limit: 1000
+  prefill: 2500
+  eval_noise: 0.0
+  reward_EMA: True
+
+  # Model
+  dyn_cell: 'MCRNN'
+  dyn_cell_p: {act: "MCNode", norm: "PopNorm"}
+  dyn_hidden: 512
+  dyn_deter: 512
+  dyn_stoch: 32
+  dyn_discrete: 32
+  dyn_input_layers: 1
+  dyn_output_layers: 1
+  dyn_rec_depth: 1
+  dyn_shared: False
+  dyn_mean_act: 'none'
+  dyn_std_act: 'sigmoid2'
+  dyn_min_std: 0.1
+  dyn_temp_post: True
+  grad_heads: ['decoder', 'reward', 'cont']
+  units: 512
+  reward_layers: 2
+  cont_layers: 2
+  value_layers: 2
+  actor_layers: 2
+  ac_units: 0  # width of the actor and critic; 0 = units
+  ac_rank: 0  # rank of the actor's and critic's weights from the dendritic spikes; 0 = full
+  act: 'LIFNode'
+  norm: 'PopNorm'
+  encoder:
+    {mlp_keys: '$^', cnn_keys: 'image', act: 'LIFNode', norm: 'PopNorm', cnn_depth: 32, kernel_size: 4, minres: 4, mlp_layers: 2, mlp_units: 512, symlog_inputs: True}
+  decoder:
+    {mlp_keys: '$^', cnn_keys: 'image', act: 'LIFNode', norm: 'PopNorm', cnn_depth: 32, kernel_size: 4, minres: 4, mlp_layers: 2, mlp_units: 512, cnn_sigmoid: False, image_dist: mse, vector_dist: symlog_mse}
+  value_head: 'symlog_disc'
+  reward_head: 'symlog_disc'
+  # one reward output per discrete action, indexed by the action that led to the state
+  reward_by_action: False
+  dyn_scale: '0.5'
+  rep_scale: '0.1'
+  kl_free: '1.0'
+  cont_scale: 1.0
+  reward_scale: 1.0
+  # cap on the mean firing rate of the recurrent cell, for rate-matched comparisons (off at 0)
+  rate_scale: 0.0
+  rate_target: 0.06
+  weight_decay: 0.0
+  unimix_ratio: 0.01
+  action_unimix_ratio: 0.01
+  initial: 'learned'
+
+  # neuron
+  spike_times: 5
+  LIFNode:
+    {threshold: 0.5, tau: 2.0, act_fun: "QGateGrad"}
+  
+  PopNorm:
+    {threshold: 0.5, v_reset: 0.0, eps: 1e-3}
+
+  MCNode:
+    {threshold: 0.5, tau: 2.0, tau_basal: 2.0, tau_apical: 2.0, v_reset: 0.0, comps: ['basal', 'apical', 'soma'], act_fun: "QGateGrad", dend_reset: True, sg_alpha: 2.0, dend_gain: False}
+
+  # Intervention A: keep the recurrent cell's membrane potentials across env steps
+  persist_state: False
+  # method prototype (dyn_cell PDRNN, configs block pdcell); tau in environment steps
+  policy_mem: 'none'
+  policy_mem_layers: 'last'
+  PDRNN: {layers: 1, channels: 4, tau_min: 1.0, tau_max: 1000.0, learn_tau: True, threshold: 0.5, input_norm: 'lru', soma: 'step', resonant: 0.0, max_phase: 6.283}
+  # baselines in the same world model (configs blocks lifcell, grsn)
+  LIFRNN: {tau: 2.0, threshold: 0.5, gain: False}
+  GRSN: {threshold: 1.0, beta_init: 0.5}
+  DHSNN: {branches: 8, low_n: 2.0, high_n: 6.0, low_m: 0.0, high_m: 4.0, threshold: 1.0}
+  TCLIF: {beta1: 0.0, beta2: 0.0, gamma: 0.5, threshold: 1.0}
+
+  # Training
+  batch_size: 16
+  batch_length: 64
+  train_ratio: 512
+  pretrain: 100
+  model_lr: 1e-4
+  opt_eps: 1e-8
+  grad_clip: 1000
+  value_lr: 3e-5
+  actor_lr: 3e-5
+  ac_opt_eps: 1e-5
+  value_grad_clip: 100
+  actor_grad_clip: 100
+  dataset_size: 1000000
+  slow_value_target: True
+  slow_target_update: 1
+  slow_target_fraction: 0.02
+  opt: 'adam'
+
+  # Behavior.
+  discount: 0.997
+  discount_lambda: 0.95
+  imag_horizon: 15
+  imag_gradient: 'dynamics'
+  imag_gradient_mix: '0.0'
+  imag_sample: True
+  actor_dist: 'normal'
+  actor_entropy: '3e-4'
+  actor_state_entropy: 0.0
+  actor_init_std: 1.0
+  actor_min_std: 0.1
+  actor_max_std: 1.0
+  actor_temp: 0.1
+  expl_amount: 0.0
+  eval_state_mean: False
+  collect_dyn_sample: True
+  behavior_stop_grad: True
+  value_decay: 0.0
+  future_entropy: False
+
+  # Exploration
+  expl_behavior: 'greedy'
+  expl_until: 0
+  expl_extr_scale: 0.0
+  expl_intr_scale: 1.0
+  disag_target: 'stoch'
+  disag_log: True
+  disag_models: 10
+  disag_offset: 1
+  disag_layers: 4
+  disag_units: 400
+  disag_action_cond: False
+
+dmc_proprio:
+  steps: 5e5
+  action_repeat: 2
+  envs: 4
+  train_ratio: 512
+  video_pred_log: false
+  encoder: {mlp_keys: '.*', cnn_keys: '$^'}
+  decoder: {mlp_keys: '.*', cnn_keys: '$^'}
+
+dmc_vision:
+  steps: 1e6
+  action_repeat: 2
+  envs: 4
+  train_ratio: 512
+  video_pred_log: False
+  encoder: {mlp_keys: '$^', cnn_keys: 'image'}
+  decoder: {mlp_keys: '$^', cnn_keys: 'image'}
+
+# Minecraft Diamond (DreamerV3; MineRL 0.4.4, envs/minecraft*.py from dreamerv3-torch): the protocol of
+# dreamerv3-torch (16 envs, train ratio 16, return of the training episodes, no eval) with the model sizes of
+# every other benchmark (upstream widened the model to DreamerV3's 200M size)
+minecraft:
+  task: minecraft_diamond
+  steps: 1e8
+  parallel: True
+  envs: 16
+  # no eval
+  eval_episode_num: 0
+  eval_every: 1e4
+  action_repeat: 1
+  train_ratio: 16
+  video_pred_log: False
+  encoder: {mlp_keys: 'inventory|inventory_max|equipped|health|hunger|breath|reward', cnn_keys: 'image'}
+  decoder: {mlp_keys: 'inventory|inventory_max|equipped|health|hunger|breath', cnn_keys: 'image'}
+  actor_dist: 'onehot'
+  imag_gradient: 'reinforce'
+  break_speed: 100.0
+  time_limit: 36000
+
+debug:
+  debug: True
+  pretrain: 1
+  prefill: 1
+  batch_size: 10
+  batch_length: 20
+
+# ---------------------------------------------------------------------------
+# Memory benchmarks, and the reset interventions on Spiking-WM
+# ---------------------------------------------------------------------------
+
+popgym:
+  steps: 1e6
+  action_repeat: 1
+  envs: 4
+  time_limit: 100000
+  train_ratio: 512
+  prefill: 2500
+  eval_every: 2e4
+  eval_episode_num: 16
+  log_every: 1e4
+  video_pred_log: False
+  actor_dist: 'onehot'
+  imag_gradient: 'reinforce'
+  encoder: {mlp_keys: 'vector', cnn_keys: '$^'}
+  decoder: {mlp_keys: 'vector', cnn_keys: '$^'}
+
+bsuite:
+  steps: 3e5
+  action_repeat: 1
+  envs: 4
+  time_limit: 100000
+  train_ratio: 512
+  prefill: 2500
+  eval_every: 1e4
+  eval_episode_num: 32
+  log_every: 1e4
+  video_pred_log: False
+  actor_dist: 'onehot'
+  imag_gradient: 'reinforce'
+  encoder: {mlp_keys: 'vector', cnn_keys: '$^'}
+  decoder: {mlp_keys: 'vector', cnn_keys: '$^'}
+
+# reset interventions on Spiking-WM (combine: --configs popgym persist nodendreset taud16)
+persist:
+  persist_state: True
+
+nodendreset:
+  MCNode: {dend_reset: False}
+
+taud16:
+  MCNode: {tau_basal: 16.0, tau_apical: 16.0}
+
+taud128:
+  MCNode: {tau_basal: 128.0, tau_apical: 128.0}
+
+thr025:
+  MCNode: {threshold: 0.25}
+
+thr100:
+  MCNode: {threshold: 1.0}
+
+taud512:
+  MCNode: {tau_basal: 512.0, tau_apical: 512.0}
+
+# intervention G: dendritic input gain sqrt(tau_d / 2), decoupled from the retention time
+dendgain:
+  MCNode: {dend_gain: True}
+
+# G at the firing rate of A+B tau128 (0.059 at memlen-16): one-sided penalty above rate_target
+ratecap:
+  rate_scale: 1000.0
+
+# rewards of the form (remembered cue x action) are an XOR for a scalar reward head, which a
+# DreamerV3 world model does not learn within our budget; indexed by the
+# action they are linear. Needs reward_head symlog_mse and discrete actions.
+rewardbyact:
+  reward_by_action: True
+
+# method prototype, see networks.PDRNN; ablations below
+pdcell:
+  dyn_cell: 'PDRNN'
+  persist_state: True
+pdeuler:
+  PDRNN: {input_norm: 'euler'}
+pdtau128:
+  PDRNN: {tau_min: 128.0, tau_max: 128.0}
+pdtau16:
+  PDRNN: {tau_min: 16.0, tau_max: 16.0}
+# the hypothesis inside the proposed model: its dendrites cleared at every environment step
+pdreset:
+  persist_state: False
+pdfixtau:
+  PDRNN: {learn_tau: False}
+# design ablations: a soma whose membrane leaks over environment steps (τ = 2)
+# and is reset by its spike; dendrites that also receive the layer's own spikes of the previous step
+pdsomalif:
+  PDRNN: {soma: 'lif', soma_tau: 2.0}
+pdfeedback:
+  PDRNN: {spike_feedback: True}
+# spike feedback in the first layer only: the second layer's dendrites, which policymem reads, stay linear in their
+# inputs
+pdfeedback1:
+  PDRNN: {spike_feedback: True, feedback_layers: 1}
+# two dendritic channels per neuron instead of four (one integrator, one resonant with resonanthalf): with
+# pdfeedback the synapses B and R together have the parameters of B alone with four channels
+pdch2:
+  PDRNN: {channels: 2}
+pd2layer:
+  PDRNN: {layers: 2}
+
+# the proposed model: two-layer PDRNN (best prototype on memlen-32-recall)
+ours:
+  dyn_cell: 'PDRNN'
+  persist_state: True
+  PDRNN: {layers: 2}
+# integrate-and-fire soma: T different spike frames per environment step (rate code) instead of
+# one frame repeated T times
+somaif:
+  PDRNN: {soma: 'if'}
+somathermo:
+  PDRNN: {soma: 'thermo'}
+# resonant dendrites: every channel a damped oscillator, or half of each neuron's
+# channels (the other half integrators as before); phase initialised as in the LRU
+resonant:
+  PDRNN: {resonant: 1.0}
+resonanthalf:
+  PDRNN: {resonant: 0.5}
+# the actor and critic (and the Memory Maze probes) also read the dendrites as spikes
+policymem:
+  policy_mem: 'onoff'
+# capacity control: the actor and critic read (z_t, h_t) only but are widened to
+# the size of PD-SWM's (12.85M parameters on POPGym; 3.42M at the default width)
+acwide:
+  ac_units: 1384
+# PD-SWM's actor-critic at the baselines' size: narrowed
+# to 142 units (3.41M parameters on POPGym; baselines 3.42M) ...
+acmatch:
+  ac_units: 142
+# ... or, kept at 512 units, with rank-64 synaptic weights from the dendritic spikes (4.7M)
+aclowrank:
+  ac_rank: 64
+
+# baselines: recurrent LIF (T SNN steps per env step, membrane cleared each step unless combined
+# with persist) and GRSN (Qin et al., AAAI 2025; one update per env step, state carried)
+lifcell:
+  dyn_cell: 'LIFRNN'
+grsn:
+  dyn_cell: 'GRSNCell'
+  persist_state: True
+# DH-SRNN (Zheng et al., Nature Communications 2024) and TC-LIF (Zhang et al., AAAI 2024), official-code defaults,
+# one update per env step with the state carried as GRSN
+dhsnn:
+  dyn_cell: 'DHSNNCell'
+  persist_state: True
+tclif:
+  dyn_cell: 'TCLIFCell'
+  persist_state: True
+liftau128:
+  LIFRNN: {tau: 128.0}
+lifgain:
+  LIFRNN: {gain: True}
+
+# Memory Maze offline probe (probe_mm.py): 64x64 first-person images, 6 discrete actions
+# Memory Maze offline probing (probe_mm.py); batch 32 x 48 as in the benchmark (Pasukonis et al. 2022, Table E.1)
+mmprobe:
+  encoder: {mlp_keys: '$^', cnn_keys: 'image'}
+  decoder: {mlp_keys: '$^', cnn_keys: 'image'}
+  reward_head: 'symlog_mse'
+  batch_size: 32
+  batch_length: 48
+  video_pred_log: False
+
+# positive control: continuous-state GRU core, everything else spiking
+grucell:
+  dyn_cell: 'GRUCtrl'
+
+# all-ANN control (with grucell: a plain DreamerV3-style world model): SiLU instead of
+# LIF in the encoder, decoder, heads and RSSM input/output layers; one time step
+annwm:
+  ANNAct: {}
+  act: 'ANNAct'
+  encoder: {act: 'ANNAct'}
+  decoder: {act: 'ANNAct'}
+  spike_times: 1

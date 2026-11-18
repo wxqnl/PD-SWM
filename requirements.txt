@@ -1,0 +1,18 @@
+# versions of the environment the paper's runs used (PyTorch from environment.yml)
+numpy==1.26.4
+ruamel.yaml==0.17.4
+einops==0.8.0
+cloudpickle==3.1.2
+pillow==12.3.0
+tensorboard==2.21.0
+moviepy==1.0.3
+scipy==1.15.3
+matplotlib==3.10.9
+# environments
+gym==0.26.2
+gymnasium==0.29.1
+dm-control==1.0.9
+mujoco==2.3.5
+bsuite==0.3.6
+popgym==1.0.7
+memory-maze==1.0.3

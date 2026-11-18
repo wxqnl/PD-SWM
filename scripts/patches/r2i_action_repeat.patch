@@ -1,0 +1,10 @@
+--- a/recall2imagine/embodied/core/wrappers.py
++++ b/recall2imagine/embodied/core/wrappers.py
+@@ -47,6 +47,7 @@
+ 
+   def step(self, action):
+     if action['reset'] or self._done:
++      self._done = False  # FWF fix: without it every episode after the first runs at repeat 1
+       return self.env.step(action)
+     reward = 0.0
+     for _ in range(self._repeat):
